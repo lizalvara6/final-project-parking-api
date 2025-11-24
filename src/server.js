@@ -3,6 +3,9 @@ import cors from 'cors';
 import morgan from 'morgan';
 import authRoutes from './routes/authRoutes.js';
 import vehicleRoutes from './routes/vehicleRoutes.js';
+import parkingLotRoutes from './routes/parkingLotRoutes.js';
+import parkingSpaceRoutes from './routes/parkingSpaceRoutes.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +16,10 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+
+app.use('/api/parking-lots', parkingLotRoutes);
+app.use('/api/parking-spaces', parkingSpaceRoutes);
+
 
 app.use((req, res, next) => {
   const err = new Error('Not Found');
