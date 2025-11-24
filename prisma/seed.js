@@ -4,65 +4,82 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.reservation.deleteMany();
-  await prisma.parkingSession.deleteMany();
-  await prisma.vehicle.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.role.deleteMany();
+  console.log('Starting seed...');
 
-  const adminRole = await prisma.role.create({
-    data: { role_name: 'Admin', description: 'Administrator with full access' },
-  });
-
-  const userRole = await prisma.role.create({
-    data: { role_name: 'User', description: 'Regular parking user' },
-  });
-
-  console.log('Created Roles');
-
-  const passwordHash = await bcrypt.hash('password123', 10);
-
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@spotsense.com',
-      password_encrypt: passwordHash,
-      first_name: 'Super',
-      last_name: 'Admin',
-      roles: {
-        create: { role_id: adminRole.role_id }
-      }
-    },
-  });
-
-  const regularUser = await prisma.user.create({
-    data: {
-      email: 'student@uncc.edu',
-      password_encrypt: passwordHash,
-      first_name: 'Norm',
-      last_name: 'Al',
-      roles: {
-        create: { role_id: userRole.role_id }
-      }
-    },
-  });
-
-  console.log('Created Users: Admin and Regular');
-
-  await prisma.vehicle.create({
-    data: {
-      user_id: regularUser.user_id,
-      license_plate: 'ABC-1234',
-      make: 'Toyota',
-      model: 'Camry'
-    }
+  // Create roles
+  let adminRole = await prisma.role.findFirst({
+    where: { role_name: 'Admin' }
   });
   
-  console.log('Seeding finished.');
+  if (!adminRole) {
+    adminRole = await prisma.role.create({
+      data: {
+        role_name: 'Admin',
+        description: 'Administrator with full access'
+      }
+    });
+  }
+
+  let userRole = await prisma.role.findFirst({
+    where: { role_name: 'User' }
+  });
+  
+  if (!userRole) {
+    userRole = await prisma.role.create({
+      data: {
+        role_name: 'User',
+        description: 'Regular user'
+      }
+    });
+  }
+
+  console.log('Roles created:', { adminRole, userRole });
+
+  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@parking.com' },
+    update: {},
+    create: {
+      email: 'admin@parking.com',
+      password_encrypt: adminPassword,
+      first_name: 'Admin',
+      last_name: 'User',
+      roles: {
+        create: {
+          role_id: adminRole.role_id
+        }
+      }
+    }
+  });
+
+  console.log('Admin user created:', adminUser.email);
+
+  // Create regular user
+  const userPassword = await bcrypt.hash('user123', 10);
+  const regularUser = await prisma.user.upsert({
+    where: { email: 'user@parking.com' },
+    update: {},
+    create: {
+      email: 'user@parking.com',
+      password_encrypt: userPassword,
+      first_name: 'Regular',
+      last_name: 'User',
+      roles: {
+        create: {
+          role_id: userRole.role_id
+        }
+      }
+    }
+  });
+
+  console.log('Regular user created:', regularUser.email);
+
+  console.log('Seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Error during seed:', e);
     process.exit(1);
   })
   .finally(async () => {
