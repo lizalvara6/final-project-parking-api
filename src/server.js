@@ -25,6 +25,15 @@ catch (error) {
   console.error('Failed to load Swagger document:', error);
 }
 
+
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Welcome to SpotSense API</h1>
+    <p>The server is running successfully.</p>
+    <p>View Documentation: <a href="/api-docs">/api-docs</a></p>
+  `);
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 
