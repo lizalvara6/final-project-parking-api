@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import vehicleRoutes from './routes/vehicleRoutes.js';
 import parkingLotRoutes from './routes/parkingLotRoutes.js';
 import parkingSpaceRoutes from './routes/parkingSpaceRoutes.js';
+import parkingSessionRoutes from './routes/parkingSessionRoutes.js';
 
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/vehicles', vehicleRoutes);
 
 app.use('/api/parking-lots', parkingLotRoutes);
 app.use('/api/parking-spaces', parkingSpaceRoutes);
+app.use('/api/parking-sessions', parkingSessionRoutes);
 
 
 app.use((req, res, next) => {
