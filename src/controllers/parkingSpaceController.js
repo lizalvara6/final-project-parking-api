@@ -1,52 +1,34 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
-
+import * as spaceService from '../services/parkingSpaceService.js';
 
 export const createParkingSpace = async (req, res) => {
   try {
-    const { lot_id, space_type } = req.body;
-
-    const space = await prisma.parkingSpace.create({
-      data: {
-        lot_id,
-        space_type,
-        is_occupied: false
-      }
-    });
-
+    const space = await spaceService.addSpace(req.body);
     res.status(201).json(space);
   } catch (error) {
-    res.status(500).json({ error: "Failed to create parking space" });
+    const status = error.message === 'Parking lot not found' ? 404 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
 
-
 export const getSpacesByLot = async (req, res) => {
   try {
-    const lot_id = parseInt(req.params.lot_id);
-
-    const spaces = await prisma.parkingSpace.findMany({
-      where: { lot_id }
-    });
-
+    const spaces = await spaceService.getSpacesForLot(req.params.lot_id);
     res.json(spaces);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch spaces" });
+    const status = error.message === 'Parking lot not found' ? 404 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
 
 export const updateSpaceStatus = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const { is_occupied } = req.body;
-
-    const updated = await prisma.parkingSpace.update({
-      where: { space_id: id },
-      data: { is_occupied }
-    });
-
+    const spaceId = req.params.space_id || req.params.id;
+    const lotId = req.params.lot_id;
+    
+    const updated = await spaceService.modifySpaceStatus(spaceId, req.body.is_occupied, lotId);
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update space" });
+    const status = error.message === 'Parking space not found' || error.message === 'Parking lot not found' || error.message === 'Space does not belong to this lot' ? 404 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
