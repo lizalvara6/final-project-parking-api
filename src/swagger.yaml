@@ -1,0 +1,734 @@
+openapi: 3.0.0
+info:
+  title: Parking API
+  description: API for managing parking lots, spaces, and vehicles
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+    
+    Vehicle:
+      type: object
+      properties:
+        vehicle_id:
+          type: integer
+        user_id:
+          type: integer
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        color:
+          type: string
+        license_plate:
+          type: string
+    
+    ParkingLot:
+      type: object
+      properties:
+        lot_id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        total_spaces:
+          type: integer
+    
+    ParkingSpace:
+      type: object
+      properties:
+        space_id:
+          type: integer
+        lot_id:
+          type: integer
+        space_type:
+          type: string
+          enum: [Compact, Standard, Handicap, Motorcycle]
+        is_occupied:
+          type: boolean
+    
+    ParkingSession:
+      type: object
+      properties:
+        session_id:
+          type: integer
+        user_id:
+          type: integer
+        space_id:
+          type: integer
+        vehicle_id:
+          type: integer
+        entry_time:
+          type: string
+          format: date-time
+        exit_time:
+          type: string
+          format: date-time
+          nullable: true
+        total_cost:
+          type: number
+          format: decimal
+          nullable: true
+        status:
+          type: string
+    
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+
+  /vehicles:
+    get:
+      tags:
+        - Vehicles
+      summary: Get all vehicles for authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+        '401':
+          description: Unauthorized
+    
+    post:
+      tags:
+        - Vehicles
+      summary: Create a new vehicle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - make
+                - model
+                - year
+                - license_plate
+              properties:
+                make:
+                  type: string
+                model:
+                  type: string
+                year:
+                  type: integer
+                color:
+                  type: string
+                license_plate:
+                  type: string
+      responses:
+        '201':
+          description: Vehicle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Validation error
+
+  /vehicles/{id}:
+    get:
+      tags:
+        - Vehicles
+      summary: Get vehicle by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vehicle found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '404':
+          description: Vehicle not found
+    
+    put:
+      tags:
+        - Vehicles
+      summary: Update vehicle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                make:
+                  type: string
+                model:
+                  type: string
+                year:
+                  type: integer
+                color:
+                  type: string
+                license_plate:
+                  type: string
+      responses:
+        '200':
+          description: Vehicle updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '403':
+          description: Not authorized to update this vehicle
+        '404':
+          description: Vehicle not found
+    
+    delete:
+      tags:
+        - Vehicles
+      summary: Delete vehicle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vehicle deleted
+        '403':
+          description: Not authorized to delete this vehicle
+        '404':
+          description: Vehicle not found
+
+  /parking-lots:
+    get:
+      tags:
+        - Parking Lots
+      summary: Get all parking lots
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of parking lots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParkingLot'
+    
+    post:
+      tags:
+        - Parking Lots
+      summary: Create a new parking lot (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - location
+                - total_spaces
+              properties:
+                name:
+                  type: string
+                location:
+                  type: string
+                total_spaces:
+                  type: integer
+      responses:
+        '201':
+          description: Parking lot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingLot'
+        '403':
+          description: Admin access required
+
+  /parking-lots/{id}:
+    get:
+      tags:
+        - Parking Lots
+      summary: Get parking lot by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Parking lot found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingLot'
+        '404':
+          description: Parking lot not found
+    
+    put:
+      tags:
+        - Parking Lots
+      summary: Update parking lot (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                location:
+                  type: string
+                total_spaces:
+                  type: integer
+      responses:
+        '200':
+          description: Parking lot updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingLot'
+        '403':
+          description: Admin access required
+        '404':
+          description: Parking lot not found
+    
+    delete:
+      tags:
+        - Parking Lots
+      summary: Delete parking lot (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Parking lot deleted
+        '403':
+          description: Admin access required
+        '404':
+          description: Parking lot not found
+
+  /parking-spaces:
+    post:
+      tags:
+        - Parking Spaces
+      summary: Create a new parking space (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lot_id
+                - space_type
+              properties:
+                lot_id:
+                  type: integer
+                space_type:
+                  type: string
+                  enum: [Compact, Standard, Handicap, Motorcycle]
+      responses:
+        '201':
+          description: Parking space created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSpace'
+        '403':
+          description: Admin access required
+        '404':
+          description: Parking lot not found
+
+  /parking-spaces/lot/{lot_id}:
+    get:
+      tags:
+        - Parking Spaces
+      summary: Get all parking spaces for a lot
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lot_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of parking spaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParkingSpace'
+        '404':
+          description: Parking lot not found
+
+  /parking-spaces/{id}:
+    patch:
+      tags:
+        - Parking Spaces
+      summary: Update parking space status (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_occupied
+              properties:
+                is_occupied:
+                  type: boolean
+      responses:
+        '200':
+          description: Parking space updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSpace'
+        '403':
+          description: Admin access required
+        '404':
+          description: Parking space not found
+
+  /parking-spaces/lot/{lot_id}/space/{space_id}:
+    patch:
+      tags:
+        - Parking Spaces
+      summary: Update parking space status with lot validation (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lot_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: space_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_occupied
+              properties:
+                is_occupied:
+                  type: boolean
+      responses:
+        '200':
+          description: Parking space updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSpace'
+        '403':
+          description: Admin access required
+        '404':
+          description: Parking lot or space not found, or space doesn't belong to lot
+
+  /parking-sessions:
+    get:
+      tags:
+        - Parking Sessions
+      summary: Get all parking sessions for authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of parking sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParkingSession'
+        '401':
+          description: Unauthorized
+    
+    post:
+      tags:
+        - Parking Sessions
+      summary: Create a new parking session (start parking)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - space_id
+                - vehicle_id
+              properties:
+                space_id:
+                  type: integer
+                vehicle_id:
+                  type: integer
+      responses:
+        '201':
+          description: Parking session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSession'
+        '400':
+          description: Space already occupied or invalid data
+        '404':
+          description: Space or vehicle not found
+
+  /parking-sessions/active:
+    get:
+      tags:
+        - Parking Sessions
+      summary: Get all active parking sessions for authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of active parking sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParkingSession'
+        '401':
+          description: Unauthorized
+
+  /parking-sessions/{session_id}:
+    get:
+      tags:
+        - Parking Sessions
+      summary: Get parking session by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Parking session found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSession'
+        '404':
+          description: Session not found
+    
+    delete:
+      tags:
+        - Parking Sessions
+      summary: Delete parking session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Session deleted
+        '403':
+          description: Not authorized to delete this session
+        '404':
+          description: Session not found
+
+  /parking-sessions/{session_id}/end:
+    patch:
+      tags:
+        - Parking Sessions
+      summary: End parking session (exit parking)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Parking session ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingSession'
+        '400':
+          description: Session already ended
+        '403':
+          description: Not authorized to end this session
+        '404':
+          description: Session not found

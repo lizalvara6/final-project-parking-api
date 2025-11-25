@@ -30,8 +30,8 @@ export const getParkingLotById = async (req, res) => {
 
 export const updateLot = async (req, res) => {
   try {
-    const updated = await parkingLotService.editLot(req.params.id, req.body);
-    res.json(lot);
+    const updated = await lotService.editLot(req.params.id, req.body);
+    res.json(updated);
   } catch (err) {
     res.status(404).json({ error: err.message });
   }
