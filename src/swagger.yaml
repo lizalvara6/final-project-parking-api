@@ -109,7 +109,7 @@ paths:
   /auth/signup:
     post:
       tags:
-        - Authentication
+        - User
       summary: Register a new user
       requestBody:
         required: true
@@ -155,7 +155,7 @@ paths:
   /auth/login:
     post:
       tags:
-        - Authentication
+        - User
       summary: Login user
       requestBody:
         required: true
