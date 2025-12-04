@@ -4,7 +4,7 @@ info:
   description: API for managing parking lots, spaces, and vehicles
   version: 1.0.0
 servers:
-  - url: https://final-project-parking-api.onrender.com
+  - url: https://final-project-parking-api.onrender.com/api
     description: Development server
 
 components:
