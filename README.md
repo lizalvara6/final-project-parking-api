@@ -184,6 +184,7 @@ npx prisma migrate reset
 ## Postman Collection
 Postman Collection Link: 
 Postman Workspace - SpotSense API
+https://lizalvara6-1368114.postman.co/workspace/Final-Project---Parking-API~832b9ac5-df00-4e8c-b41e-278059a7d47b/collection/50326688-c93892df-0af7-4bcd-844d-fce6c3c637ea?action=share&creator=50322869
 
 
 ## Swagger API Docs
